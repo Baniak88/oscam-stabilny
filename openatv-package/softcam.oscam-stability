@@ -1,0 +1,95 @@
+#!/bin/sh
+### BEGIN INIT INFO
+# Provides:          oscam-stability
+# Required-Start:    $local_fs
+# Required-Stop:     $local_fs
+# Short-Description: OSCam Stability
+### END INIT INFO
+
+binary_dir=/usr/lib/oscam-stability
+runtime=/var/run/oscam-stability
+pidfile=$runtime/oscam.pid
+config_file=/etc/oscam-stability.configdir
+
+fail() { printf '%s\n' "$*" >&2; exit 1; }
+
+select_binary() {
+    case "$(uname -m)" in
+        aarch64|arm64)
+            if "$binary_dir/oscam-aarch64" -V >/dev/null 2>&1; then
+                bin=$binary_dir/oscam-aarch64
+            else
+                bin=$binary_dir/oscam-arm
+            fi ;;
+        armv7*|armv8*|armhf) bin=$binary_dir/oscam-arm ;;
+        *) fail "OSCam Stability wymaga ARMv7 lub ARM64." ;;
+    esac
+    "$bin" -V >/dev/null 2>&1 || fail "Binarna wersja OSCam nie uruchamia się na tym dekoderze."
+}
+
+select_config() {
+    if [ -f "$config_file" ]; then
+        IFS= read -r config < "$config_file" || [ -n "$config" ] || fail "Pusty plik $config_file."
+        case "$config" in /*) ;; *) fail "Wpisz pełną ścieżkę w $config_file." ;; esac
+    else
+        config=
+        for dir in /etc/tuxbox/config /etc/tuxbox/config/oscam* /etc/oscam /var/tuxbox/config /var/tuxbox/config/oscam*; do
+            [ -f "$dir/oscam.conf" ] || continue
+            actual=$(readlink -f "$dir") || continue
+            [ "$actual" = "$config" ] && continue
+            [ -z "$config" ] || fail "Znaleziono kilka konfiguracji. Wpisz właściwy katalog do $config_file."
+            config=$actual
+        done
+    fi
+    [ -n "$config" ] && [ -r "$config/oscam.conf" ] ||
+        fail "Nie znaleziono oscam.conf. Wpisz katalog konfiguracji do $config_file."
+}
+
+is_running() {
+    [ -r "$pidfile" ] || return 1
+    IFS= read -r pid < "$pidfile" || return 1
+    case "$pid" in ''|*[!0-9]*) return 1 ;; esac
+    exe=$(readlink "/proc/$pid/exe" 2>/dev/null) || return 1
+    case "$exe" in "$binary_dir/oscam-arm"|"$binary_dir/oscam-aarch64") return 0 ;; esac
+    return 1
+}
+
+start_cam() {
+    is_running && return 0
+    select_binary
+    select_config
+    for process in /proc/[0-9]*/exe; do
+        active=$(readlink "$process" 2>/dev/null) || continue
+        case "${active##*/}" in
+            oscam*|OSCam*) fail "Najpierw zatrzymaj działający OSCam." ;;
+        esac
+    done
+    umask 077
+    mkdir -p "$runtime" || fail "Nie można utworzyć $runtime."
+    rm -f "$pidfile" || fail "Nie można usunąć starego PID."
+    "$bin" -b -c "$config" -t "$runtime" -B "$pidfile" || fail "Nie udało się uruchomić OSCam."
+    for attempt in 1 2 3 4 5; do
+        is_running && return 0
+        sleep 1
+    done
+    fail "OSCam nie wystartował. Sprawdź log i katalog konfiguracji."
+}
+
+stop_cam() {
+    is_running || return 0
+    kill -TERM "$pid" || fail "Nie udało się zatrzymać OSCam."
+    for attempt in 1 2 3 4 5; do
+        is_running || return 0
+        sleep 1
+    done
+    fail "OSCam nadal działa po żądaniu zatrzymania."
+}
+
+case "${1:-}" in
+    start) start_cam ;;
+    stop) stop_cam ;;
+    restart|reload) stop_cam && start_cam ;;
+    status) is_running && { printf 'OSCam Stability działa (PID %s).\n' "$pid"; exit 0; }; exit 3 ;;
+    version|info) select_binary; "$bin" -V ;;
+    *) printf 'Użycie: %s start|stop|restart|status|version\n' "$0" >&2; exit 2 ;;
+esac

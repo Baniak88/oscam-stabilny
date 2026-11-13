@@ -1,0 +1,115 @@
+##TPLHEADERSHORT##
+	<script type="text/javascript">
+
+	var page = 'status';
+	var jsonurl = 'oscamapi.json';
+	var parameters = '?part=status';
+	var stoppoll = 0;
+	var pollintervall = 0;
+	var polling = 0;
+	var pollrefresh = '##POLLREFRESHTIME##';
+
+	</script>
+##TPLBODY##
+##TPLMENU##
+<section id="stability" data-auto="true" lang="pl" aria-labelledby="stability-title">
+  <header class="stability-header">
+    <div>
+      <h1 id="stability-title">Stabilność odbioru</h1>
+      <div class="stability-live">
+        <p id="stability-message" role="status">Pobieranie danych…</p>
+        <p id="stability-updated" class="stability-updated"></p>
+      </div>
+    </div>
+    <div class="stability-actions">
+      <button id="stability-pause" type="button" aria-pressed="false">Wstrzymaj auto</button>
+      <button id="stability-refresh" type="button">Odśwież</button>
+    </div>
+  </header>
+  <dl class="stability-summary">
+    <div><dt>Dostępne readery</dt><dd id="stability-online">–</dd></div>
+    <div><dt><abbr title="95. percentyl całkowitego czasu poprawnych żądań ECM, z uwzględnieniem oczekiwania na fallback">P95</abbr> czasu ECM</dt><dd id="stability-p95">–</dd></div>
+    <div><dt>Timeouty klientów</dt><dd id="stability-timeouts">–</dd></div>
+  </dl>
+  <div class="stability-panel">
+    <div class="stability-toolbar">
+      <h2>Readery</h2>
+      <div class="stability-filters">
+        <label><span class="stability-visually-hidden">Szukaj według nazwy lub protokołu</span><input id="stability-filter" type="search" placeholder="Szukaj readera"></label>
+        <label><input id="stability-issues" type="checkbox"> Tylko problemy</label>
+      </div>
+    </div>
+    <div class="stability-columns" aria-hidden="true">
+      <span>Reader</span><span>Połączenie</span><span>Ostatni ECM</span><span>P95 ECM</span>
+    </div>
+    <div id="stability-readers"></div>
+    <p class="stability-note">Ostatnie 2 min · maks. 16 próbek na reader lub klienta</p>
+  </div>
+  <div class="stability-secondary">
+    <details class="stability-events">
+      <summary>Zmiany połączenia</summary>
+      <p>Zmiany widoczne podczas odświeżania panelu. Automatyczne odczyty działają w aktywnej karcie.</p>
+      <ul id="stability-events"></ul>
+    </details>
+    <details class="stability-events">
+      <summary>Limity czasu i ustawienia</summary>
+      <dl class="stability-settings">
+        <div><dt>Limit ECM</dt><dd id="stability-client-limit">–</dd></div>
+        <div><dt>Start źródła zapasowego</dt><dd id="stability-fallback-limit">–</dd></div>
+      </dl>
+      <p>Źródło zapasowe musi być skonfigurowane. Reguły dla poszczególnych CAID mogą zmieniać czas startu.</p>
+      <a href="config.html">Otwórz ustawienia OSCam</a>
+    </details>
+  </div>
+</section>
+<div id = "chart">
+	<div id = "charthead" ></div>
+	<div id = "graph" ></div>
+</div>
+##TPLMESSAGE##
+<details class="stability-legacy" id="stability-legacy" open>
+<summary>Pełny status OSCam</summary>
+<DIV ID="subnav">
+	<UL ID="nav">
+		<LI><B>##HTTPOSCAMLABEL## ##CS_VERSION##</B></LI>
+		<LI CLASS="configmenu"><A HREF="##SCM_URL##/commit/##CS_GIT_COMMIT##" TARGET="_blank">Commit</A></LI>
+		<LI CLASS="configmenu"><A HREF="##SCM_URL##/commits/master" TARGET="_blank">Timeline</A></LI>
+		<LI CLASS="configmenu"><A HREF="#statusfooter">Status</A></LI>
+##TPLPOLLINGSET##
+	</UL>
+</DIV>
+<p class="stability-scroll-hint">Przewiń tabelę w bok, aby zobaczyć pozostałe kolumny.</p>
+<div class="stability-scroll" role="region" aria-label="Pełna tabela statusu OSCam" tabindex="0">
+<TABLE CLASS="status">
+	<TR>
+		<TH COLSPAN="2" CLASS="statuscol0">Akcje</TH>
+		<TH CLASS="statuscol4">Reader / klient</TH>
+		<TH CLASS="statuscol5">AU</TH>
+		<TH CLASS="statuscol7">Adres</TH>
+		<TH CLASS="statuscol8">Port</TH>
+		<TH CLASS="statuscol9">Protokół</TH>
+		<TH CLASS="statuscol12">SRVID:CAID@PROVID</TH>
+		<TH CLASS="statuscol13">Kanał</TH>
+		<TH CLASS="statuscol14">##STATUSCOL14HEAD##Reader</TH>
+		<TH ID="onlineidle" TITLE="Online &amp; Idle Info" CLASS="statuscol15">Logowanie</TH>
+		<TH CLASS="statuscol16">Stan</TH>
+	</TR>
+<tbody id="tbodys">##SERVERHEADLINE####SERVERSTATUS##</tbody>
+<tbody id="tbodyr">##READERHEADLINE####READERSTATUS##</tbody>
+<tbody id="tbodyp">##PROXYHEADLINE####PROXYSTATUS##</tbody>
+<tbody id="tbodyc">##CLIENTHEADLINE####CLIENTSTATUS##</tbody>
+</TABLE>
+</div>
+##LOG_HISTORY##
+</details>
+<DIV CLASS="info ##DISPLAYINFO##">
+<TABLE CLASS="infotable">
+##TPLREADERINFOBIT##
+##TPLUSERINFOBIT##
+##TPLCACHEEXINFOBIT##
+##TPLCACHEEXAIOINFOBIT##
+##TPLSYSTEMINFOBIT##
+</TABLE>
+</DIV>
+<DIV id="picolor"></DIV>
+##TPLFOOTER##

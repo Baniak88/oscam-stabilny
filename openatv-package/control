@@ -1,0 +1,8 @@
+Package: enigma2-softcams-oscam-stability
+Version: 1.3.0
+Architecture: all
+Maintainer: OSCam Stability build
+Section: utils
+Priority: optional
+Description: OSCam Stability WebIF for OpenATV, ARMv7 hard-float and AArch64.
+ The softcam is selected manually and uses an existing OSCam configuration.

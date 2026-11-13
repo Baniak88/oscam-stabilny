@@ -1,0 +1,35 @@
+Source baseline:
+https://git.streamboard.tv/common/oscam/-/commit/7476c3278853149e9beb6bba08f115763830ea0c
+
+OpenSSL 3.5.9 source:
+https://www.openssl.org/source/openssl-3.5.9.tar.gz
+SHA256: 603f5602e2eef00d77fbd429d34dcd5822bb301757a1bc9cdb24c670f1eb859a
+
+Toolchain downloads:
+https://toolchains.bootlin.com/downloads/releases/toolchains/armv7-eabihf/tarballs/armv7-eabihf--musl--stable-2024.05-1.tar.xz
+https://toolchains.bootlin.com/downloads/releases/toolchains/aarch64/tarballs/aarch64--musl--stable-2024.05-1.tar.xz
+
+Build in a separate OpenSSL build directory. Set CROSS to the full
+toolchain prefix (ending in arm-linux- or aarch64-linux-) and SSL_SRC
+to the absolute path of the extracted OpenSSL source.
+
+  "$SSL_SRC/Configure" linux-armv4 no-shared no-tests no-module --cross-compile-prefix="$CROSS"
+  make -j4 build_libs
+
+Use linux-aarch64 in place of linux-armv4 for AArch64. Set SSL_BUILD to
+the absolute path of the OpenSSL build directory. Run this in the
+extracted OSCam source directory:
+
+  make -j4 CROSS="$CROSS" USE_SSL=1 SSL_LIB="$SSL_BUILD/libssl.a" \
+    LIBCRYPTO_LIB="$SSL_BUILD/libcrypto.a" \
+    EXTRA_CFLAGS="-I$SSL_BUILD/include -I$SSL_SRC/include" \
+    EXTRA_LDFLAGS=-static CONF_DIR=/etc/tuxbox/config OSCAM_BIN=oscam-stability
+
+The source archive contains the OpenATV service and package metadata.
+
+For the published version label add:
+  VER=2.26.11-11975-stability1.3.0 GIT_SHA=7476c327
+
+After building both targets, create the package from the source root:
+  openatv-package/build-ipk.sh ./oscam-arm ./oscam-aarch64 \
+    "$SSL_SRC/LICENSE.txt" ./oscam-stability_1.1.0_all.ipk
