@@ -1,0 +1,35 @@
+name: Build ARMv7 static OSCam preview
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'ci/build-armv7-static.sh'
+      - '.github/workflows/build-armv7-static.yml'
+      - 'openatv-package/**'
+      - 'Makefile'
+      - 'config.sh'
+
+permissions:
+  contents: read
+
+jobs:
+  build-armv7:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 55
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install build and emulator tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential curl xz-utils tar file binutils qemu-user-static perl zlib1g-dev
+      - name: Cross-compile static ARMv7 and verify in QEMU
+        run: sh ci/build-armv7-static.sh
+      - name: Upload preview IPK and SHA256
+        uses: actions/upload-artifact@v4
+        with:
+          name: oscam-stability-armv7-static-preview
+          path: |
+            dist/oscam-stability_1.3.0_armv7-static-preview.ipk
+            dist/oscam-stability_1.3.0_armv7-static-preview.ipk.sha256
+          if-no-files-found: error
