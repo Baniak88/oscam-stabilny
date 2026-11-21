@@ -1,0 +1,33 @@
+name: Publish H11.S ARMv7 preview IPK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/publish-h11s-preview.yml'
+
+permissions:
+  actions: read
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Download successful tested ARMv7 build
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh run download 44948892005 --repo "${{ github.repository }}" --name oscam-stability-armv7-static-preview --dir ./dist
+          cd dist
+          sha256sum -c oscam-stability_1.3.0_armv7-static-preview.ipk.sha256
+      - name: Publish preview as prerelease
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tag=h11s-armv7-preview-1
+          if gh release view "$tag" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Preview release already exists. Not overwriting."
+            exit 0
+          fi
+          gh release create "$tag"             dist/oscam-stability_1.3.0_armv7-static-preview.ipk             dist/oscam-stability_1.3.0_armv7-static-preview.ipk.sha256             --repo "${{ github.repository }}"             --target "${{ github.sha }}"             --title "H11.S ARMv7 static preview 1"             --prerelease             --notes "ARMv7 static OSCam Stability preview. Cross-compiled and version-tested under QEMU; NOT physically tested on Zgemma H11.S. Do not remove existing OSCam or force-overwrite files. The service is not automatically started."
