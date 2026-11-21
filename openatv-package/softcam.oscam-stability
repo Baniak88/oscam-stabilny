@@ -54,8 +54,30 @@ is_running() {
     return 1
 }
 
+publish_enigma2_version() {
+    version="$runtime/oscam.version"
+    [ -s "$version" ] || return 0
+    compat=/tmp/.oscam/oscam.version
+    mkdir -p /tmp/.oscam || return 0
+    if [ -e "$compat" ] || [ -L "$compat" ]; then
+        [ "$(readlink "$compat" 2>/dev/null)" = "$version" ] || return 0
+    else
+        ln -s "$version" "$compat" || return 0
+    fi
+}
+
+unpublish_enigma2_version() {
+    compat=/tmp/.oscam/oscam.version
+    if [ -L "$compat" ] && [ "$(readlink "$compat" 2>/dev/null)" = "$runtime/oscam.version" ]; then
+        rm -f "$compat"
+    fi
+}
+
 start_cam() {
-    is_running && return 0
+    if is_running; then
+        publish_enigma2_version
+        return 0
+    fi
     select_binary
     select_config
     for process in /proc/[0-9]*/exe; do
@@ -69,17 +91,26 @@ start_cam() {
     rm -f "$pidfile" || fail "Nie można usunąć starego PID."
     "$bin" -b -c "$config" -t "$runtime" -B "$pidfile" || fail "Nie udało się uruchomić OSCam."
     for attempt in 1 2 3 4 5; do
-        is_running && return 0
+        if is_running; then
+            publish_enigma2_version
+            return 0
+        fi
         sleep 1
     done
     fail "OSCam nie wystartował. Sprawdź log i katalog konfiguracji."
 }
 
 stop_cam() {
-    is_running || return 0
+    if ! is_running; then
+        unpublish_enigma2_version
+        return 0
+    fi
     kill -TERM "$pid" || fail "Nie udało się zatrzymać OSCam."
     for attempt in 1 2 3 4 5; do
-        is_running || return 0
+        if ! is_running; then
+            unpublish_enigma2_version
+            return 0
+        fi
         sleep 1
     done
     fail "OSCam nadal działa po żądaniu zatrzymania."
