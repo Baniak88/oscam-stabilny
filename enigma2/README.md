@@ -26,3 +26,21 @@ Compatibility notes:
 - This is a plugin source installation, not an IPK upgrade. No OSCam binary changes.
 - If Enigma2 does not show the plugin after GUI restart, inspect Enigma2 startup logs
   for import errors. Physical-device compatibility has not yet been tested.
+
+## Native Softcam Settings > Info repair
+
+OpenATV's built-in OSCamInfo reads `/tmp/.oscam/oscam.version`, while
+OSCam Stability 1.3.0 uses a separate runtime directory. The repair below
+checks the active OSCam Stability PID, publishes a symlink to its own
+`oscam.version`, and registers the service in `/etc/init.d/softcam` only
+if that link does not already exist. It never replaces another CAM's link.
+
+```sh
+wget -O /tmp/repair-openatv.sh https://raw.githubusercontent.com/Baniak88/oscam-stabilny/main/enigma2/repair-openatv.sh && sh /tmp/repair-openatv.sh
+```
+
+Restart Enigma2 GUI after successful repair. The script does not restart OSCam.
+If it reports that the version file is missing or another softcam is selected,
+inspect the output rather than forcing a replacement. A service-source change
+is also committed for the **next rebuilt IPK**, but the installed 1.3.0 IPK
+is not automatically changed by GitHub commits.
