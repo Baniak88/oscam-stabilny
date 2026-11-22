@@ -63,13 +63,24 @@ printf 'SHA256 verification passed.\n'
 BACKUPDIR=/root/oscam-stability-backup
 mkdir -p "$BACKUPDIR" || fail "Cannot create backup directory."
 chmod 700 "$BACKUPDIR"
-if [ -d /etc/tuxbox/config ]; then
-    BACKUP="$BACKUPDIR/config-before-stability-$(date +%Y%m%d-%H%M%S).tar.gz"
-    tar -czf "$BACKUP" -C /etc tuxbox/config || fail "Configuration backup failed; nothing installed."
+# A fresh OpenATV installation may have no OSCam configuration at all.
+# Back up any existing config locations, but do not create dummy credentials or
+# refuse a side-by-side binary install just because /etc/tuxbox/config is absent.
+FOUND_CONFIG=0
+for CONFIGDIR in /etc/tuxbox/config /etc/tuxbox/config/oscam* /etc/oscam /var/tuxbox/config /var/tuxbox/config/oscam*; do
+    [ -d "$CONFIGDIR" ] || continue
+    [ -f "$CONFIGDIR/oscam.conf" ] || continue
+    FOUND_CONFIG=1
+    SAFE_NAME=$(printf '%s' "$CONFIGDIR" | tr '/' '_')
+    BACKUP="$BACKUPDIR/config-before-stability-${SAFE_NAME}-$(date +%Y%m%d-%H%M%S).tar.gz"
+    tar -czf "$BACKUP" -C / "${CONFIGDIR#/}" || fail "Configuration backup failed; nothing installed."
     chmod 600 "$BACKUP"
     printf 'Configuration backup: %s\n' "$BACKUP"
-else
-    fail "/etc/tuxbox/config is missing; inspect receiver configuration before installing."
+done
+if [ "$FOUND_CONFIG" -eq 0 ]; then
+    printf 'NOTICE: No existing oscam.conf was found in standard locations.\n'
+    printf 'Installing the binary and service only. OSCam Stability will NOT start\n'
+    printf 'until an authorized local OSCam configuration is supplied.\n'
 fi
 
 printf 'Installing side-by-side preview without force flags...\n'
